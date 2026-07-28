@@ -1,8 +1,11 @@
 // ==UserScript==
 // @name         BHVP – Volet Outlook vers ChatGPT
 // @namespace    bhvp-outlook-chatgpt
-// @version      1.2.2
+// @version      1.2.3
 // @description  Envoie le courrier visible vers ChatGPT, récupère automatiquement sa réponse et peut l’insérer dans un brouillon Outlook.
+// @homepageURL  https://github.com/GLAD1981/Tampermonkey
+// @updateURL    https://raw.githubusercontent.com/GLAD1981/Tampermonkey/main/BHVP-Volet-Outlook.user.js
+// @downloadURL  https://raw.githubusercontent.com/GLAD1981/Tampermonkey/main/BHVP-Volet-Outlook.user.js
 // @match        https://outlook.office.com/*
 // @match        https://outlook.cloud.microsoft/*
 // @match        https://outlook.office365.com/*
