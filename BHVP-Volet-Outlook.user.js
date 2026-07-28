@@ -23,7 +23,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.2.2';
+  const VERSION = '1.2.3';
   const STORAGE_PENDING = 'bhvp_pending_mail_v2';
   const STORAGE_SETTINGS = 'bhvp_panel_settings_v2';
   const STORAGE_ACTIVE_REQUEST = 'bhvp_active_request_v1';
