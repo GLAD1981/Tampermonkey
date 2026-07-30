@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BHVP – Volet Outlook vers ChatGPT
 // @namespace    bhvp-outlook-chatgpt
-// @version      1.3.1
+// @version      1.3.2
 // @description  Envoie le courrier visible vers ChatGPT, récupère automatiquement sa réponse et peut l’insérer dans un brouillon Outlook.
 // @homepageURL  https://github.com/GLAD1981/Tampermonkey
 // @updateURL    https://raw.githubusercontent.com/GLAD1981/Tampermonkey/main/BHVP-Volet-Outlook.user.js
@@ -26,14 +26,44 @@
 
   const HOST_ID = 'bhvp-outlook-panel-host';
   const RETURN_BUTTON_ID = 'bhvp-return-to-outlook';
-  const PATCH_MARKER = 'bhvp-simple-ui-v131';
-
-  function textOf(element) {
-    return String(element?.textContent || '').replace(/\s+/g, ' ').trim();
-  }
+  const PATCH_MARKER = 'bhvp-simple-ui-v132';
 
   function removeManualReturnButton() {
     document.getElementById(RETURN_BUTTON_ID)?.remove();
+  }
+
+  function restoreResponseControls(shadow) {
+    const responseSection = shadow.getElementById('response-section');
+    const responseText = shadow.getElementById('response-text');
+    const responseLabel = responseSection?.querySelector('label');
+    const insertButton = [...(responseSection?.querySelectorAll('button') || [])]
+      .find((button) => button.classList.contains('primary') || button.textContent.trim() === 'Insérer');
+
+    if (!responseSection || !responseText || !insertButton) return;
+
+    const makeVisible = () => {
+      if (responseSection.hidden) responseSection.hidden = false;
+      if (responseSection.hasAttribute('hidden')) responseSection.removeAttribute('hidden');
+      if (responseText.hidden) responseText.hidden = false;
+      if (responseText.style.display === 'none') responseText.style.display = '';
+      if (!responseText.placeholder) {
+        responseText.placeholder = 'La réponse de ChatGPT apparaîtra ici.';
+      }
+      if (responseLabel && responseLabel.textContent !== 'Réponse prête à insérer') {
+        responseLabel.textContent = 'Réponse prête à insérer';
+      }
+      if (insertButton.hidden) insertButton.hidden = false;
+      if (insertButton.style.display === 'none') insertButton.style.display = '';
+      if (insertButton.textContent !== 'Insérer') insertButton.textContent = 'Insérer';
+    };
+
+    makeVisible();
+
+    const responseObserver = new MutationObserver(makeVisible);
+    responseObserver.observe(responseSection, {
+      attributes: true,
+      attributeFilter: ['hidden']
+    });
   }
 
   function patchOutlookPanel() {
@@ -51,7 +81,7 @@
     if (!panel || !main) return false;
 
     const version = shadow.querySelector('.version');
-    if (version) version.textContent = 'v1.3.1';
+    if (version) version.textContent = 'v1.3.2';
 
     // Supprime le pavé « Boîte utilisée », tout en conservant sa valeur
     // en mémoire dans le code historique.
@@ -143,6 +173,10 @@
 
     // Retire l'avertissement d'information demandé.
     shadow.querySelector('.privacy')?.remove();
+
+    // Rétablit le champ de réponse et le bouton d'insertion, et les garde
+    // visibles même lorsque la réponse n'est pas encore revenue de ChatGPT.
+    restoreResponseControls(shadow);
 
     return true;
   }
