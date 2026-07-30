@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BHVP – Volet Outlook vers ChatGPT
 // @namespace    bhvp-outlook-chatgpt
-// @version      1.3.2
+// @version      1.3.3
 // @description  Envoie le courrier visible vers ChatGPT, récupère automatiquement sa réponse et peut l’insérer dans un brouillon Outlook.
 // @homepageURL  https://github.com/GLAD1981/Tampermonkey
 // @updateURL    https://raw.githubusercontent.com/GLAD1981/Tampermonkey/main/BHVP-Volet-Outlook.user.js
@@ -26,7 +26,7 @@
 
   const HOST_ID = 'bhvp-outlook-panel-host';
   const RETURN_BUTTON_ID = 'bhvp-return-to-outlook';
-  const PATCH_MARKER = 'bhvp-simple-ui-v132';
+  const PATCH_MARKER = 'bhvp-simple-ui-v133';
 
   function removeManualReturnButton() {
     document.getElementById(RETURN_BUTTON_ID)?.remove();
@@ -42,19 +42,17 @@
     if (!responseSection || !responseText || !insertButton) return;
 
     const makeVisible = () => {
-      if (responseSection.hidden) responseSection.hidden = false;
-      if (responseSection.hasAttribute('hidden')) responseSection.removeAttribute('hidden');
-      if (responseText.hidden) responseText.hidden = false;
+      responseSection.hidden = false;
+      responseSection.removeAttribute('hidden');
+      responseText.hidden = false;
       if (responseText.style.display === 'none') responseText.style.display = '';
       if (!responseText.placeholder) {
         responseText.placeholder = 'La réponse de ChatGPT apparaîtra ici.';
       }
-      if (responseLabel && responseLabel.textContent !== 'Réponse prête à insérer') {
-        responseLabel.textContent = 'Réponse prête à insérer';
-      }
-      if (insertButton.hidden) insertButton.hidden = false;
+      if (responseLabel) responseLabel.textContent = 'Réponse prête à insérer';
+      insertButton.hidden = false;
       if (insertButton.style.display === 'none') insertButton.style.display = '';
-      if (insertButton.textContent !== 'Insérer') insertButton.textContent = 'Insérer';
+      insertButton.textContent = 'Insérer';
     };
 
     makeVisible();
@@ -64,6 +62,16 @@
       attributes: true,
       attributeFilter: ['hidden']
     });
+  }
+
+  function forceCheckedAndHide(shadow, id) {
+    const input = shadow.getElementById(id);
+    if (!input) return;
+    if (!input.checked) {
+      input.checked = true;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    input.closest('label')?.remove();
   }
 
   function patchOutlookPanel() {
@@ -81,14 +89,11 @@
     if (!panel || !main) return false;
 
     const version = shadow.querySelector('.version');
-    if (version) version.textContent = 'v1.3.2';
+    if (version) version.textContent = 'v1.3.3';
 
-    // Supprime le pavé « Boîte utilisée », tout en conservant sa valeur
-    // en mémoire dans le code historique.
     const profile = shadow.getElementById('profile');
     profile?.closest('.section')?.remove();
 
-    // Ne conserve que le compteur de caractères du courrier détecté.
     const mailMeta = shadow.getElementById('mail-meta');
     const mailSection = mailMeta?.closest('.section');
     if (mailMeta && mailSection) {
@@ -103,9 +108,6 @@
     }
     shadow.getElementById('refresh')?.remove();
 
-    // Un seul bouton de préparation : sans instruction, il déclenche
-    // l'ancien mode « Envoyer sans consigne » ; avec instruction, il
-    // déclenche la préparation d'une réponse.
     const replyOriginal = shadow.querySelector('button[data-action="reply"]');
     const rawOriginal = shadow.querySelector('button[data-action="raw"]');
     const summaryOriginal = shadow.querySelector('button[data-action="summary"]');
@@ -132,27 +134,10 @@
       rawOriginal?.remove();
     }
 
-    // Inclut toujours tout le fil visible, sans afficher l'option.
-    const includeThread = shadow.getElementById('includeThread');
-    if (includeThread) {
-      if (!includeThread.checked) {
-        includeThread.checked = true;
-        includeThread.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      includeThread.closest('label')?.remove();
-    }
+    forceCheckedAndHide(shadow, 'includeThread');
+    forceCheckedAndHide(shadow, 'popupWindow');
+    forceCheckedAndHide(shadow, 'autoSend');
 
-    // Ouvre toujours ChatGPT dans une fenêtre séparée, sans afficher l'option.
-    const popupWindow = shadow.getElementById('popupWindow');
-    if (popupWindow) {
-      if (!popupWindow.checked) {
-        popupWindow.checked = true;
-        popupWindow.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      popupWindow.closest('label')?.remove();
-    }
-
-    // Fixe la largeur à 350 px et supprime le curseur de réglage.
     const panelWidth = shadow.getElementById('panelWidth');
     if (panelWidth) {
       panelWidth.value = '350';
@@ -161,23 +146,10 @@
       panelWidth.closest('.range-row')?.remove();
     }
 
-    // Réserve toujours la place dans Outlook, sans afficher l'option.
-    const reserveSpace = shadow.getElementById('reserveSpace');
-    if (reserveSpace) {
-      if (!reserveSpace.checked) {
-        reserveSpace.checked = true;
-        reserveSpace.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      reserveSpace.closest('label')?.remove();
-    }
-
-    // Retire l'avertissement d'information demandé.
+    forceCheckedAndHide(shadow, 'reserveSpace');
     shadow.querySelector('.privacy')?.remove();
 
-    // Rétablit le champ de réponse et le bouton d'insertion, et les garde
-    // visibles même lorsque la réponse n'est pas encore revenue de ChatGPT.
     restoreResponseControls(shadow);
-
     return true;
   }
 
